@@ -6,4 +6,4 @@ CGO_ENABLED=1
 GOOS=windows 
 GOARCH=amd64 
 CC=x86_64-w64-mingw32-gcc
-go build -o build/temp/casgo_win64.exe app.go
+go build -o builds/$1/casgo_win64.exe app.go
