@@ -25,7 +25,7 @@ go build -o builds/$BUILD_NR/casgo app.go
 # deploy to GitHub releases
 export GIT_TAG=v$BUILD_NR
 export GIT_RELTEXT="Auto-released by [Travis-CI build #$TRAVIS_BUILD_NUMBER](https://travis-ci.org/$TRAVIS_REPO_SLUG/builds/$TRAVIS_BUILD_ID)"
-curl -sSL https://github.com/tcnksm/ghr/releases/download/v0.5.4/ghr_v0.5.4_linux_amd64.zip > ghr.zip
-unzip ghr.zip
-./ghr --version
-./ghr --debug -u xjx00 -b "$GIT_RELTEXT" $GIT_TAG builds/$BUILD_NR/
+curl -sSL https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz > ghr.tar.gz
+tar xvf ghr.tar.gz   
+./ghr_v0.13.0_linux_amd64/ghr --version
+./ghr_v0.13.0_linux_amd64/ghr --debug -u xjx00 -b "$GIT_RELTEXT" $GIT_TAG builds/$BUILD_NR/
