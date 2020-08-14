@@ -21,6 +21,7 @@ echo "BUILD_NR=$BUILD_NR"
 # run build
 mkdir builds
 mkdir builds/$BUILD_NR/
+chmod +x build.sh
 ./build.sh $BUILD_NR
 # deploy to GitHub releases
 export GIT_TAG=v$BUILD_NR
