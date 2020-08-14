@@ -21,7 +21,9 @@ echo "BUILD_NR=$BUILD_NR"
 # run build
 mkdir builds
 mkdir builds/$BUILD_NR/
-go build -o builds/$BUILD_NR/casgo app.go
+chmod +x build_win.sh
+./build_win.sh $BUILD_NR
+go build -o builds/$BUILD_NR/casgo_linux_amd64 app.go
 # deploy to GitHub releases
 export GIT_TAG=v$BUILD_NR
 export GIT_RELTEXT="Auto-released by [Travis-CI build #$TRAVIS_BUILD_NUMBER](https://travis-ci.org/$TRAVIS_REPO_SLUG/builds/$TRAVIS_BUILD_ID)"
