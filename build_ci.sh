@@ -21,8 +21,9 @@ echo "BUILD_NR=$BUILD_NR"
 # run build
 mkdir builds
 mkdir builds/$BUILD_NR/
-chmod +x build_win.sh
-./build_win.sh $BUILD_NR
+#win64
+CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -o builds/$BUILD_NR/casgo_win_amd64.exe app.go
+#linux64
 go build -o builds/$BUILD_NR/casgo_linux_amd64 app.go
 # deploy to GitHub releases
 export GIT_TAG=v$BUILD_NR
