@@ -21,6 +21,22 @@ type Inspost struct {
 	Remarks   string `json:"remarks" binding:"required"`
 }
 
+func cors() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        method := c.Request.Method
+
+        c.Header("Access-Control-Allow-Origin", "*")
+        c.Header("Access-Control-Allow-Headers", "Content-Type,AccessToken,X-CSRF-Token, Authorization, Token")
+        c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
+        c.Header("Access-Control-Allow-Credentials", "true")
+        if method == "OPTIONS" {
+            c.AbortWithStatus(http.StatusNoContent)
+        }
+        c.Next()
+    }
+}
+
 func checkErr(err error) {
 	if err != nil {
 		fmt.Println("[Casapi-error] error:", err.Error())
@@ -179,6 +195,8 @@ func Deletecomponent(c *gin.Context, db *sql.DB) {
 
 func main() {
 	r := gin.Default()
+
+        r.USE(cors())
 
 	db, err := sql.Open("sqlite3", "./elec.db")
 	checkErr(err)
