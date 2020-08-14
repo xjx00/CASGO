@@ -1,8 +1,5 @@
 language:    # 指明使用的语言
   - go 
-arch:
-  - amd64
-  - arm64
 script:
   - chmod +x build_ci.sh
   - ./build_ci.sh
