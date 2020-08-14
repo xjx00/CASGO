@@ -196,7 +196,7 @@ func Deletecomponent(c *gin.Context, db *sql.DB) {
 func main() {
 	r := gin.Default()
 
-        r.USE(cors())
+        r.Use(cors())
 
 	db, err := sql.Open("sqlite3", "./elec.db")
 	checkErr(err)
