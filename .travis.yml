@@ -1,0 +1,9 @@
+language:    # 指明使用的语言
+  - go 
+script:
+  - ./build_ci.sh
+branches:
+  only:
+    - master
+  except:
+    - /^v\d.*$/

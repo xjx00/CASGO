@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,6 +25,22 @@ type Inspost struct {
 func checkErr(err error) {
 	if err != nil {
 		fmt.Println("[Casapi-error] error:", err.Error())
+	}
+}
+
+func cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Headers", "Content-Type,AccessToken,X-CSRF-Token, Authorization, Token")
+		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		if method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+		}
+		c.Next()
 	}
 }
 
@@ -177,16 +194,27 @@ func Deletecomponent(c *gin.Context, db *sql.DB) {
 	}
 }
 
+func QQlogin(c *gin.Context, db *sql.DB) {
+	str := []byte("ok&admin&100001&http://localhost:3000/static/logo.img")
+	uEnc := base64.URLEncoding.EncodeToString(str)
+	c.Redirect(http.StatusMovedPermanently, "http://localhost:3000/index.html#"+uEnc)
+}
+
 func main() {
 	r := gin.Default()
+
+	r.Use(cors())
 
 	db, err := sql.Open("sqlite3", "./elec.db")
 	checkErr(err)
 
 	//默认路由
-	r.GET("/", func(c *gin.Context) {
-		c.String(200, "Welcome Component Archive System Api")
-	})
+	r.StaticFile("/", "./static/index.html")
+	r.StaticFile("/index.html", "./static/index.html")
+
+	//静态资源
+	r.Static("/static", "./static")
+	r.Static("/layui", "./static/layui")
 
 	//查询元件
 	r.GET("/v1/search/:method/:value", func(c *gin.Context) {
@@ -203,5 +231,10 @@ func main() {
 		Deletecomponent(c, db)
 	})
 
-	r.Run() // listen and serve on 0.0.0.0:8080
+	//用户登录
+	r.GET("/v1/qqlogin", func(c *gin.Context) {
+		QQlogin(c, db)
+	})
+
+	r.Run(":3000") // listen and serve on 0.0.0.0:3000
 }

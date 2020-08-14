@@ -1,0 +1,653 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+    <title>元器件管理系统V1.0.0</title>
+    <link rel="stylesheet" href="layui/css/layui.css" media="all">
+    <script src="layui/layui.js" charset="utf-8"></script>
+    <script>
+        //global var
+        var user_obj =   //the user object
+        { 
+            Login_enr : false,              //是否已登录(默认否)
+            user_name : "管理员",         //name
+            user_id   : "1000001",       //uid 
+            logo_url  : ""
+        };
+        var url_global = 'http://localhost:3000/v1/search/all/all';//'http://127.0.0.1:81/cms-v1.0.0/api.json';
+        var tableIns;
+
+        var $=null;
+        var layer=null;
+        function table(urls)
+        {         //重载数据表格
+            layui.use('table', function(){
+            var table = layui.table;
+
+            table.render({
+                elem: '#demo',
+                height: 575,             //若不定义height参数，则表格高度会根据数据条数自动动态调整(limit参数)
+                url: urls,//数据接口   style="padding-top: 10px"
+                //url: 'http://127.0.0.1:81/api',
+                page: true,
+                id: 'testReload',
+                // skin: 'line', //行边框风格
+                even: true,   //开启隔行背景
+                cols: [[
+                    {type:'checkbox', fixed: 'left'},
+                    {field: 'id',       title: 'ID',   width:110,unresize: true, sort: true,},       //unresize: 定义为true则不能被鼠标拖拽伸缩(列宽) sort:字符串同样能够排序
+                    {field: 'name',     title: '名称', width:200,unresize: true},
+                    {field: 'value',    title: '类型', width:200,unresize: true},
+                    {field: 'footprint',title: '封装', width:200,unresize: true},
+                    {field: 'position', title: '位置', width:180,unresize: true},
+                    {field: 'number',   title: '数量', width:180,unresize: true},
+                    {field: 'remarks',  title: '备注', width:290,unresize: true}
+                ]],
+                parseData: function(res){    //res返回数据，js对象，非json字符串
+                    if(JSON.stringify(res.code)=='1' || res.count==0)
+                    {
+                        // res = {"code":0,"msg":"","count":501,"data":[{"id":"200001","name":"10k","value":"电阻","footprint":"R0402","position":"1010101","number":"10","remarks":"测试电阻"}]};
+                        res = {"code":0,"msg":"","count":0,"data":[]};
+                    }
+                    else{}
+                    return res;
+                }
+            });
+            });
+        }
+
+        function TableReload(ReUrl)
+        {
+            var table = layui.table;
+            table.reload('testReload', {
+            url: ReUrl,
+            });
+        }
+ 
+        function search()              //根据关键词搜索数据
+        {                   
+            if(user_obj.Login_enr) 
+            {
+                var data = document.getElementById("demoReload").value;
+                var index = document.getElementById("search").value;
+                var url_s = 'http://localhost:3000/v1/search/*/#'
+                if(index=='0'){layer.msg("请选择搜索方式");}
+                else
+                {
+                    if(data=="")
+                    {
+                        url_s = 'http://localhost:3000/v1/search/all/all';
+                    }
+                    else
+                    {
+                        url_s = url_s.replace('*/#', index+'/'+data);
+                    }
+                    TableReload(url_s);
+                }
+            } 
+            else 
+            {
+                layer.msg("请先登录");
+            }
+        }
+        
+        function Renum_of_component()  //刷新元件盒中的元件数量
+        {
+            var $ = layui.jquery;
+            var url_numOf = "http://www.hg007.club:300/test?uid="+user_obj.user_id;
+            $("#num_of_component").load(url_numOf);
+        }
+        
+        function LogoutFunc()   //退出登录操作
+        {
+            user_obj.Login_enr = false;
+            // user_obj.user_name="";
+            // user_obj.user_id  ="";
+            delCookie("uid");
+            document.getElementById('layui-nav-child-id').style.visibility='hidden';
+            document.getElementById('layui-nav-child-id_noLogin').style.visibility='visible';
+            document.getElementById("user_name_id").innerHTML='<img src="./static/img_avatar.png" class="layui-nav-img" id="user_icon_id"> 登录 <span class="layui-nav-more layui-nav-mored" id="layui-nav-more-id"></span>';
+            window.location.href="http://localhost:3000/index.html"
+            layer.msg("Logout ok!");
+        }
+        function LoginFunc(logo_url)    //登录操作
+        {
+            //user_obj.Login_enr = true;
+            // user_obj.user_name="";
+            // user_obj.user_id  ="";
+            //layer.msg("Login ok!");
+            //layui-nav-child-id_noLogin
+            document.getElementById("user_name_id").innerHTML='<img src="'+logo_url+'" class="layui-nav-img" id="user_icon_id">'+user_obj.user_name+'<span class="layui-nav-more layui-nav-mored" id="layui-nav-more-id"></span>';
+            document.getElementById('layui-nav-child-id_noLogin').style.visibility='hidden';
+            document.getElementById('layui-nav-child-id').style.visibility="visible";
+
+
+        }
+        function randomString(len) {
+        　　len = len || 32;
+        　　var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';    /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
+        　　var maxPos = $chars.length;
+        　　var pwd = '';
+        　　for (i = 0; i < len; i++) {
+        　　　　pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+        　　}
+        　　return pwd;
+        }
+
+        function myfunc_1()    //点击了登录按钮
+        {
+            // alert(document.getElementById('user_name_id').innerHTML);
+            if(!user_obj.Login_enr)  //如果还未登录
+            {
+                //LoginFunc();    //登录相关操作
+                //页面跳转
+                window.location.href="http://localhost:3000/v1/qqlogin?method=1" //TODO:这里优化一下，可以换成弹出层什么的
+                layer.msg("正在跳转到QQ登录");
+            }
+        }
+
+        function component_box()        //点击了元件盒按钮
+        {
+            if(user_obj.Login_enr) 
+            {
+                location.href = "http://hg007.club/admin/cart.html";
+            } 
+            else 
+            {
+                layer.msg("请先登录");
+            }
+        }
+
+        function InputKeyDown()
+        {
+            var key = event.which;
+            if(key==13)
+            {
+                search();
+            }
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        function setCookie(name,value)
+        {
+            var Days = 30;    //30天后Cookie过期
+            var exp = new Date();
+            exp.setTime(exp.getTime() + Days*24*60*60*1000);
+            document.cookie = name + "="+ escape (value) + ";expires=" + exp.toGMTString();
+        }
+
+        //读取cookies
+        function getCookie(name)
+        {
+            var arr,reg=new RegExp("(^| )"+name+"=([^;]*)(;|$)");
+        
+            if(arr=document.cookie.match(reg))
+        
+                return unescape(arr[2]);
+            else
+                return null;
+        }
+
+        //删除cookies
+        function delCookie(name)
+        {
+            var exp = new Date();
+            exp.setTime(exp.getTime() - 1);
+            var cval=getCookie(name);
+            if(cval!=null)
+                document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+        }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    </script>
+
+    <style>
+        .body_register_part_css 
+        {
+            margin: 150px;
+            margin-left: 33%;
+            margin-right: 33%;
+            border:1px solid #24ddd4;
+
+            padding-top: 20px;
+            padding-right: 90px;
+        }
+    </style>
+</head>
+<body>
+            <ul class="layui-nav">
+                <li class="layui-nav-item layui-this">
+                        <a href="index.html">首页</a>
+                </li>
+
+                <!-- <li class="layui-nav-item" id="component_box_id" lay-unselect="">
+                  <a href="javascript:component_box();">元件盒<span class="layui-badge-dot"></span></a>
+                </li>
+
+                <li class="layui-nav-item AddToComponentBoxEvent" lay-unselect="">
+                  <a href="javascript:;" class="AddToComponentBoxEvent-class" data-method="AddToComponentBoxEventMethod">加入元件盒</a>  <!-- <span class="layui-badge" id="num_of_component">*</span> -->
+                <!--</li> -->
+
+                <li class="layui-nav-item" lay-unselect="" id = "hg001_id">
+                    <a href="javascript:myfunc_1();" id="user_name_id"><img src="./static/img_avatar.png" class="layui-nav-img" id="user_icon_id"> 登录 <span class="layui-nav-more layui-nav-mored" id="layui-nav-more-id"></span></a>
+                    <dl class="layui-nav-child" id="layui-nav-child-id" style="visibility: hidden;">
+                        <dd><a href="javascript:;" class="add_insert">添加元件</a></dd>
+                        <!-- <dd><a href="javascript:;" class="register_cla">注册</a></dd> -->
+                        <dd id="layerDemo"><a class="ool" data-method="notice" href="javascript:;">退出登录</a></dd>
+                    </dl>
+                    <dl class="layui-nav-child" id="layui-nav-child-id_noLogin" style="visibility: visible;">
+                        <!-- <dd><a href="javascript:;" class="register_cla">注册</a></dd> -->
+                    </dl>
+                </li>
+
+            </ul>
+    <div id="body_main_part_id" style="visibility: visible;display: unset;">       
+        <form class="layui-form" action="">
+    
+                <div class="layui-form-item" style="width: 292px;padding-left:10px; padding-top: 10px;">
+                    <label class="layui-form-label " style="background-color: #009688; color:white; width: 33px;height: 20px;">way</label>
+                    <div class="layui-input-block" >
+                        <select name="search" id="search" lay-filter="way" >
+                            <!-- <option value="0">选择检索方式</option> -->
+                            <option value="name">名称</option>
+                            <option value="id">ID</option>
+                            
+                            <option value="value">类型</option>
+                            <option value="footprint">封装</option>
+                            <option value="position">位置</option>
+                            <!-- <option value="number">number</option>
+                            <option value="remarks">remarks</option> -->
+                        </select>
+                    </div>
+                </div>
+        </form>
+                
+        <div class="demoTable" style="padding-top: 0px; padding-left: 10px">
+                <button class="layui-btn" onclick="search()" data-type="reload">搜索</button>   <!-- onclick="search()" data-type="reload" -->
+                <div class="layui-input-inline" style="padding-left: 42px;">
+                  <input class="layui-input" name="id" id="demoReload" autocomplete="off" onkeydown="InputKeyDown()">
+                </div>
+               
+        </div>
+
+        <table class="layui-hide" id="demo" lay-filter="test" style="padding-left: 10px"></table>
+    </div>
+
+    <div id="body_register_part_id" style="display: none;">
+        <div class="body_register_part_css" id="body_register_part_css_id">
+        <form class="layui-form" action="">
+			<div class="layui-form-item">
+			  <label class="layui-form-label">UID</label>
+			  <div class="layui-input-block">
+				<input type="text" id="UID" lay-verify="title" autocomplete="off" placeholder="输入UID" class="layui-input">
+			  </div>
+			</div>
+
+			<div class="layui-form-item">
+			  <label class="layui-form-label">name</label>
+			  <div class="layui-input-block">
+				<input type="text" id="username" lay-verify="required" lay-reqtext="用户名是必填项，岂能为空？" placeholder="输入用户名" autocomplete="off" class="layui-input">
+			  </div>
+            </div>
+            
+            <div style="padding-top: 100px;padding-left: 10%;padding-bottom: 30px;">
+                <button type="button" class="layui-btn" id="btn_register_id">注册</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="btn_register_cancel_id" style="margin-left: 100px;">取消</button>
+            </div>
+
+        </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById("body_register_part_css_id").addEventListener("mouseover", function(){
+            this.style.border="1px solid #009688"
+        });
+        document.getElementById("body_register_part_css_id").addEventListener("mouseout", function(){
+            this.style.border="1px solid #24ddd4"
+        });
+        
+    </script>
+
+    <div id="body_add_part_id" style="display: none;">
+    <div style="padding-top: 50px;padding-right: 100px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label">id</label>
+            <div class="layui-input-block">
+              <input type="text" id="ID" lay-verify="title" autocomplete="off"    class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">名称</label>
+            <div class="layui-input-block">
+              <input type="text" id="名称" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">类型</label>
+            <div class="layui-input-block">
+              <input type="text" id="类型" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">封装</label>
+            <div class="layui-input-block">
+              <input type="text" id="封装" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">位置</label>
+            <div class="layui-input-block">
+              <input type="text" id="位置" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">数量</label>
+            <div class="layui-input-block">
+              <input type="text" id="数量" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+              <input type="text" id="备注" lay-verify="title" autocomplete="off"  class="layui-input">
+            </div>
+        </div>
+
+        <button type="button" class="layui-btn" id="btn_add_insert_id" style="margin-left: 110px;">添加</button>        
+    </div>
+    </div>
+
+    
+
+    
+    <script>
+        layui.use(['form', 'layedit', 'laydate'], function(){
+        var form = layui.form
+        ,layer = layui.layer
+        ,layedit = layui.layedit
+        ,laydate = layui.laydate;
+    });
+    </script>
+    <script>
+        var body_main_part    =document.getElementById("body_main_part_id");
+        var body_register_part=document.getElementById("body_register_part_id");
+        var body_add_part     =document.getElementById("body_add_part_id");
+
+        layui.use('element', function(){
+          var element = layui.element; //导航的hover效果、二级菜单等功能，需要依赖element模块
+
+        });
+    </script>
+    <script>
+        layui.use('table', function(){
+            var table = layui.table;
+            //监听表格复选框选择,数据被勾选时的回调
+            table.on('checkbox(test)', function(obj){
+                // alert(JSON.stringify(obj));
+            });
+        });
+    </script>
+    <script>
+        layui.use('layer', function(){ //独立版的layer无需执行这一句
+          $ = layui.jquery, layer = layui.layer; //独立版的layer无需执行这一句
+          //触发事件
+          var active = {
+            notice: function(){
+              //公告层
+              layer.open({
+                 type: 1
+                ,title: false //不显示标题栏
+                ,closeBtn: false
+                ,area: '300px;'
+                ,shade: 0.8
+                ,id: 'LAY_layuipro' //设定一个id，防止重复弹出
+                ,btn: ['取消', '确定']
+                ,btnAlign: 'c'
+                ,moveType: 1 //拖拽模式，0或者1
+                ,content: '<div style="padding: 30px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">确定退出吗？亲！</div>'
+                ,success: function(layero){
+                  var btn = layero.find('.layui-layer-btn');
+                  btn.find('.layui-layer-btn1').attr({
+                    href: 'javascript:LogoutFunc();'
+                    // ,target: '_blank'   
+                  });}});},
+            AddToComponentBoxEventMethod: function()   //点击加入元件盒按钮事件回调
+            {
+                if(user_obj.Login_enr)
+                {
+                    var table = layui.table;
+                    var checkStatus = table.checkStatus('testReload')
+                    ,data = checkStatus.data;   //data:JSON对象数组
+                    var len = data.length;
+                    if(len!=0)
+                    {
+                        var id_arry = new Array();
+                        for(var i=0; i<len; i++)
+                        {
+                            var id_o = {};
+                            id_o.id = data[i].id;
+                            id_arry.push(id_o);
+                        }
+                        var PostData = {uid:""};
+                        PostData.uid = user_obj.user_id;
+                        PostData.data= id_arry;
+                        var urln =  "http://localhost:3000/v1/addcart";
+                        // urln =  "http://hg007.club:300/test";
+                        $.ajax({
+                        type: "POST",
+                        url: urln,
+                        data: JSON.stringify(PostData),
+                        contentType: "application/json",
+                        processData: false,
+                        beforeSend: function (xhr) {
+                            
+                        },
+                        success: function (data) {
+                            layer.msg("添加成功!");
+                            }
+                        });
+                        // $.post(url, JSON.stringify(PostData), function(data, status){
+                        //     if(status=="success")
+                        //     {
+                        //         layer.msg("添加成功!");
+                        //         // Renum_of_component();
+                        //     }
+                        //     else{layer.alert("添加失败!");}
+                        // });
+                    }
+                    else
+                    {
+                        layer.msg("未选中数据");
+                    }
+                }
+                else {layer.msg("请先登录");}
+            }
+          };
+          //must
+          $('#layerDemo .ool').on('click', function(){
+            var othis = $(this), method = othis.data('method');
+            active[method] ? active[method].call(this, othis) : '';
+          });
+
+          $('.AddToComponentBoxEvent .AddToComponentBoxEvent-class').on('click', function(){
+            var othis = $(this), method = othis.data('method');
+            active[method] ? active[method].call(this, othis) : '';
+          });
+
+          //注册操作
+        //   var body_main_part    =document.getElementById("body_main_part_id");
+        //   var body_register_part=document.getElementById("body_register_part_id");
+        //   var body_add_part     =document.getElementById("body_add_part_id");
+
+          $(".register_cla").on("click", function(){
+            body_main_part.style.display='none';
+            body_add_part.style.display='none';
+            body_register_part.style.display='unset';
+          });
+
+          $(".add_insert").on("click",function(){
+            body_main_part.style.display='none';
+            body_register_part.style.display='none';
+            body_add_part.style.display='unset';
+          });
+
+
+            $("#UID").val(randomString(8))
+            $("#btn_register_id").click(function(){
+                var reg_uid = $("#UID").val()
+                var reg_nam = $("#username").val()
+                if(reg_uid=='')
+                {
+                    layer.msg("uid不能为空")
+                    return
+                }
+                if(reg_nam=='')
+                {
+                    layer.msg("name不能为空")
+                    return
+                }
+                layer.msg("即将跳转使用qq注册...",{time: 500})
+                setTimeout(() => {
+                    window.open("http://localhost:3000/v1/qqlogin?method=2&name="+reg_nam+"&uid="+reg_uid);
+                }, 500);
+                
+            });
+            $("#btn_register_cancel_id").click(function(){
+                body_main_part.style.display='unset';
+                body_register_part.style.display='none';
+            });
+            
+            $("#btn_add_insert_id").click(function(){
+                var add_item=
+                {
+                    id:$("#ID").val(),
+                    name:$("#名称").val(),
+                    value:$("#类型").val(),
+                    footprint:$("#封装").val(),
+                    position:$("#位置").val(),
+                    number:$("#数量").val(),
+                    remarks:$("#备注").val(),
+                }
+                if(add_item.id=='')
+                {
+                    layer.msg("ID不能为空")
+                    return
+                }
+                if(add_item.name=='')
+                {
+                    layer.msg("名称不能为空")
+                    return
+                }
+                if(add_item.value=='')
+                {
+                    layer.msg("类型不能为空")
+                    return
+                }
+                if(add_item.footprint=='')
+                {
+                    layer.msg("封装不能为空")
+                    return
+                }
+                if(add_item.position=='')
+                {
+                    layer.msg("位置不能为空")
+                    return
+                }
+
+                $.ajax({
+                type: "POST",
+                url: "http://localhost:3000/v1/insert",
+                data: JSON.stringify(add_item),
+                contentType: "application/json",
+                processData: false,
+                beforeSend: function (xhr) {
+                    
+                },
+                success: function (data) {
+                    if(data=="successful")
+                    {
+                        layer.msg("添加成功!");
+                        return
+                    }
+                    if(data.errno==19)
+                    {
+                        layer.msg("添加失败，id重复!");
+                    }
+                }
+                });
+                
+            });
+        
+        });
+    </script>
+    <script>
+        //获取服务端传递的用户信息
+        layui.use('layer',
+        function()
+        {
+            var layer = layui.layer;
+
+            var user_info_base64 = window.location.hash  //获取url#后的信息
+            // layer.msg("user_info:"+user_info_base64);
+
+            if(user_info_base64 == "" || user_info_base64 == "#")
+            {
+                if(getCookie("uid") == null || getCookie("name") == null)
+                {
+                    // layer.msg("请先登录");//TODO:这里优化一下，我调layer.msg()不行
+                }
+                else
+                {
+                    user_obj.Login_enr = true
+                    user_obj.user_id = getCookie('uid')
+                    user_obj.user_name = getCookie('name')
+                    user_obj.logo_url  = getCookie('logo_url')
+                    LoginFunc(user_obj.logo_url)
+                    table(url_global)
+                }
+            }
+            else if(user_info_base64 == "#user_not_found")
+            {
+                layer.msg("登录失败，找不到此用户")//TODO:这里优化一下，我调layer.msg()不行
+            }
+            else if(user_obj.Login_enr == false)
+            {
+                var info_t = user_info_base64.split('#')[1]
+                var info = decodeURIComponent(atob(info_t))
+                // var info = atob(info_t)
+                var state = info.split('&')[0]
+                var name = info.split('&')[1]
+                var uid = info.split('&')[2]
+                var logo_url = info.split('&')[3]
+                // console.log(state)
+                if(state == "ok")
+                {
+                    user_obj.Login_enr = true
+                    user_obj.user_id = uid
+                    user_obj.user_name = name
+
+                    setCookie("uid",uid)
+                    setCookie("name",name)
+                    setCookie("logo_url",logo_url)
+
+                    LoginFunc(logo_url)
+                    // window.location.href="#"
+                    table(url_global);
+                    layer.msg("登录成功")//TODO:这里优化一下，我调layer.msg()不行
+                }
+                else
+                {
+                    layer.msg("登录失败")
+                }
+            }
+
+
+        }
+        );
+        
+        
+    </script>
+</body>
+</html>
